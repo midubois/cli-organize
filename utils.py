@@ -29,7 +29,19 @@ def get_db() -> sqlite3.Connection:
         CREATE INDEX IF NOT EXISTS idx_tags_tag ON tags(tag);
         CREATE INDEX IF NOT EXISTS idx_files_downloaded ON files(downloaded_at);
     """)
+    _prune_missing_files(conn)
     return conn
+
+
+def _prune_missing_files(conn: sqlite3.Connection) -> None:
+    rows = conn.execute("SELECT id, filepath FROM files").fetchall()
+    gone = [row["id"] for row in rows if not Path(row["filepath"]).exists()]
+    if not gone:
+        return
+    placeholders = ",".join("?" * len(gone))
+    with conn:
+        conn.execute(f"DELETE FROM tags  WHERE file_id IN ({placeholders})", gone)
+        conn.execute(f"DELETE FROM files WHERE id       IN ({placeholders})", gone)
 
 
 def get_last_download() -> Path:
@@ -138,6 +150,7 @@ def cmd_list_tags(_args: argparse.Namespace) -> None:
     rows = conn.execute(
         "SELECT tag, COUNT(*) AS count FROM tags GROUP BY tag ORDER BY count DESC, tag"
     ).fetchall()
+
     if not rows:
         print("No tags in database.")
         return
