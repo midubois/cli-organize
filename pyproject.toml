@@ -1,0 +1,14 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.backends.legacy:build"
+
+[project]
+name = "cli-organize"
+version = "0.1.0"
+requires-python = ">=3.8"
+
+[project.scripts]
+organize = "utils:main"
+
+[tool.setuptools]
+py-modules = ["utils"]
